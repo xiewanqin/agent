@@ -1,0 +1,31 @@
+{
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    // // Python 解释器配置
+    // "python.defaultInterpreterPath": "${workspaceFolder}/tool-test-python/venv/bin/python",
+    // "python.analysis.extraPaths": [
+    //     "${workspaceFolder}/tool-test-python/venv/lib/python3.13/site-packages"
+    // ],
+    // Python 格式化配置
+    "editor.formatOnSave": true,
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.autopep8",
+        "editor.formatOnSave": true,
+        "editor.tabSize": 2,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        }
+    },
+    // autopep8 格式化器配置（支持 2 空格缩进）
+    "autopep8.args": [
+        "--indent-size=2",
+        "--max-line-length=88",
+        "--aggressive",
+        "--aggressive"
+    ],
+    // isort 配置（用于导入排序）
+    "isort.args": [
+        "--indent=2",
+        "--line-length=88"
+    ]
+}

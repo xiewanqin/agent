@@ -1,0 +1,120 @@
+.ai-toolbar {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(20px);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+  min-width: 320px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.ai-toolbar-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid rgba(102, 126, 234, 0.1);
+}
+
+.ai-toolbar-header label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+  color: #1a1a1a;
+  transition: color 0.2s;
+}
+
+.ai-toolbar-header label:hover {
+  color: #667eea;
+}
+
+.ai-toolbar-header input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #667eea;
+}
+
+.ai-toolbar-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ai-input-group {
+  display: flex;
+  gap: 10px;
+}
+
+.ai-input-group input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.8);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: inherit;
+}
+
+.ai-input-group input:focus {
+  outline: none;
+  border-color: #667eea;
+  background: white;
+  box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+  transform: translateY(-1px);
+}
+
+.ai-input-group input::placeholder {
+  color: #999;
+}
+
+.ai-input-group button,
+.ai-actions button {
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  white-space: nowrap;
+}
+
+.ai-input-group button:hover:not(:disabled),
+.ai-actions button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+.ai-input-group button:active:not(:disabled),
+.ai-actions button:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.ai-input-group button:disabled,
+.ai-actions button:disabled {
+  background: linear-gradient(135deg, #ccc 0%, #bbb 100%);
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.ai-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.ai-actions button {
+  flex: 1;
+  font-size: 13px;
+  padding: 10px 16px;
+}

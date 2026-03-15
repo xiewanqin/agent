@@ -1,0 +1,101 @@
+/* React Flow 自定义样式 */
+
+/* 连接线样式 */
+.react-flow__edge-path {
+  stroke-width: 2.5px;
+  stroke: #667eea;
+  filter: drop-shadow(0 2px 4px rgba(102, 126, 234, 0.2));
+}
+
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: #764ba2;
+  stroke-width: 3px;
+}
+
+.react-flow__edge.animated .react-flow__edge-path {
+  stroke-dasharray: 5;
+  animation: dashdraw 0.5s linear infinite;
+}
+
+@keyframes dashdraw {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+/* 连接点样式 */
+.react-flow__handle {
+  width: 12px;
+  height: 12px;
+  border: 2px solid white;
+  background: #667eea;
+  transition: all 0.2s;
+}
+
+.react-flow__handle:hover {
+  width: 14px;
+  height: 14px;
+  background: #764ba2;
+}
+
+.react-flow__handle-connecting {
+  background: #ff6b35;
+  box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.2);
+}
+
+.react-flow__handle-valid {
+  background: #4caf50;
+}
+
+/* 控制按钮样式 */
+.react-flow__controls {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.react-flow__controls-button {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.2s;
+}
+
+.react-flow__controls-button:hover {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.react-flow__controls-button svg {
+  fill: #667eea;
+}
+
+/* 小地图样式 */
+.react-flow__minimap {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* 背景网格样式 */
+.react-flow__background {
+  opacity: 0.4;
+}
+
+/* 选择框样式 */
+.react-flow__nodesselection-rect {
+  background: rgba(102, 126, 234, 0.1);
+  border: 2px solid #667eea;
+  border-radius: 4px;
+}
+
+/* 面板样式 */
+.react-flow__panel {
+  margin: 16px;
+}
+
+/* 节点选中效果 */
+.react-flow__node.selected {
+  filter: drop-shadow(0 8px 24px rgba(102, 126, 234, 0.3));
+}
