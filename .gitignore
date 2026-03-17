@@ -1,1 +1,10 @@
-weather 
+weather
+.venv/
+__pycache__/
+*.pyc
+.env
+miaobang-canvas
+miaobang-canvas-vue
+node_modules
+**/node_modules/
+**/*.env*

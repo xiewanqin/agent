@@ -34,9 +34,9 @@ except ImportError:
 async def main():
   # 使用 init_chat_model (LangChain 1.0 推荐方式)
   model = init_chat_model(
-      f"openai:{os.getenv['MODEL_NAME']}",
-      api_key=os.getenv["OPENAI_API_KEY"],
-      base_url=os.getenv["OPENAI_BASE_URL"],
+      f"openai:{os.getenv('MODEL_NAME')}",
+      api_key=os.getenv("OPENAI_API_KEY"),
+      base_url=os.getenv("OPENAI_BASE_URL"),
       temperature=0,
   )
 
@@ -46,21 +46,51 @@ async def main():
               "command": "python",
               "args": [MCP_SERVER_PATH],
               "transport": "stdio",
-          }
+          },
+          "amap-maps-streamableHTTP": {
+              "url": f"https://mcp.amap.com/mcp?key={os.getenv('AMAP_MAPS_API_KEY')}",
+              "transport": "http",
+          },
+          "filesystem": {
+              "command": "npx",
+              "args": [
+                  "-y",
+                  "@modelcontextprotocol/server-filesystem",
+                  *[p.strip() for p in os.getenv("ALLOWED_PATHS", "").split(",") if p.strip()],
+              ],
+              "transport": "stdio",
+          },
+          "chrome-devtools": {
+              "command": "npx",
+              "args": [
+                  "-y",
+                  "chrome-devtools-mcp@latest",
+              ],
+              "transport": "stdio",
+          },
       }
   )
 
-  async with client.session("my-mcp-server") as session:
+  async with (
+      client.session("my-mcp-server") as my_session,
+      client.session("amap-maps-streamableHTTP") as amap_session,
+      client.session("filesystem") as fs_session,
+      client.session("chrome-devtools") as chrome_session,
+  ):
     log_info("📦 正在加载 MCP 工具...")
-    tools = await load_mcp_tools(session)
+    my_tools = await load_mcp_tools(my_session)
+    amap_tools = await load_mcp_tools(amap_session)
+    fs_tools = await load_mcp_tools(fs_session)
+    chrome_tools = await load_mcp_tools(chrome_session)
+    tools = my_tools + amap_tools + fs_tools + chrome_tools
     log_success(f"✅ 已加载 {len(tools)} 个工具: {[t.name for t in tools]}")
 
-    # 加载资源内容作为 system_prompt
+    # 加载资源内容作为 system_prompt（只从 my-mcp-server 读取）
     log_info("📚 正在加载 MCP 资源...")
     resource_content = ""
-    resources = await session.list_resources()
+    resources = await my_session.list_resources()
     for resource in resources.resources:
-      content = await session.read_resource(resource.uri)
+      content = await my_session.read_resource(resource.uri)
       for item in content.contents:
         if hasattr(item, "text"):
           resource_content += item.text
@@ -75,17 +105,7 @@ async def main():
     )
     log_success("✅ Agent 创建完成")
 
-    async def run_agent(query: str, stream: bool = False):
-      """
-      使用 create_agent 执行查询
-
-      create_agent 的优势（LangChain 1.0 新特性）:
-      1. 自动处理工具调用循环，无需手动编写循环逻辑
-      2. 自动管理消息历史（HumanMessage, AIMessage, ToolMessage）
-      3. 自动判断何时停止（当 AI 不再调用工具时）
-      4. 支持流式输出，可以实时查看执行过程
-      5. 内置错误处理和重试机制
-      """
+    async def run_agent(query: str, stream: bool = True):
       log_info(f"\n💬 用户查询: {query}")
 
       inputs = {
@@ -95,23 +115,34 @@ async def main():
       }
 
       if stream:
-        # 流式输出模式：实时查看 agent 执行过程
-        # stream_mode="updates" 的 chunk 格式: {node_name: node_output}
-        # create_agent 的节点名是 "model" 和 "tools"（不是 "agent"）
-        log_info("⏳ Agent 正在流式处理...")
+        # 流式模式：实时展示每步工具调用过程
+        log_info("⏳ Agent 正在处理（流式）...")
         result = None
-        async for chunk in graph.astream(inputs, stream_mode="updates"):
-          for node_name, node_output in chunk.items():
-            if node_name == "model":
-              log_info("🤖 Agent 正在思考...")
-            elif node_name == "tools":
-              log_info("🔧 正在执行工具...")
-          result = chunk  # updates 模式最后一个 chunk 不包含完整 state
+        async for chunk in graph.astream(inputs, stream_mode="values"):
+          msgs = chunk.get("messages", [])
+          if not msgs:
+            continue
+          last = msgs[-1]
 
-        # astream updates 模式拿不到完整最终结果，需要 ainvoke
-        result = await graph.ainvoke(inputs)
+          # model 节点：AI 决定调用哪些工具
+          if hasattr(last, "tool_calls") and last.tool_calls:
+            for tc in last.tool_calls:
+              args_str = ", ".join(f"{k}={v}" for k, v in tc["args"].items())
+              log_info(f"🤖 AI 决定调用: [{tc['name']}]  参数: {args_str}")
+
+          # tools 节点：工具执行完毕，返回结果
+          elif hasattr(last, "name") and hasattr(last, "tool_call_id"):
+            preview = str(last.content)[:100].replace("\n", " ")
+            log_success(
+                f"🔧 [{
+                    last.name}] 返回: {preview}{
+                    '...' if len(
+                        str(
+                            last.content)) > 100 else ''}")
+
+          result = chunk
       else:
-        # 直接获取最终结果（推荐方式）
+        # 非流式模式：直接等待最终结果，不展示中间过程
         log_info("⏳ Agent 正在处理...")
         result = await graph.ainvoke(inputs)
 
@@ -133,14 +164,9 @@ async def main():
         log_success(f"\n✨ AI 回复:\n{result}\n")
         return str(result)
 
-    # 执行查询
-    # 方式 1: 直接获取结果（推荐）
-    await run_agent("查一下用户 002 的信息")
-
-    # 方式 2: 流式输出，可以看到每个步骤（model 思考 / tools 执行）
-    await run_agent("查一下用户 002 的信息", stream=True)
-
-    await run_agent("MCP Server 的使用指南是什么")
+    # await run_agent("北京南站附近的5个酒店，以及去的路线，路线规划生成文档保存到
+    # /Users/xiewq/web/agent/tool-test-python 的一个 md 文件")
+    await run_agent("北京南站附近的酒店，最近的 3 个酒店，拿到酒店图片，打开浏览器，展示每个酒店的图片，每个 tab 一个 url 展示，并且在把那个页面标题改为酒店名")
 
 
 if __name__ == "__main__":
