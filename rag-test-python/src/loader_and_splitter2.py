@@ -34,15 +34,15 @@ embeddings = OpenAIEmbeddings(
 
 
 async def main():
-  # print("正在加载网页内容...")
-  # loader = WebBaseLoader(
-  #     web_paths=["https://juejin.cn/post/7233327509919547452"],
-  #     bs_kwargs={"parse_only": bs4.SoupStrainer(["p", "title"])},
-  # )
-  # documents = loader.load()
-  # print(f"加载完成，总字符数: {len(documents[0].page_content)}\n")
+  print("正在加载网页内容...")
+  loader = WebBaseLoader(
+      web_paths=["https://juejin.cn/post/7233327509919547452"],
+      bs_kwargs={"parse_only": bs4.SoupStrainer(["p", "title"])},
+  )
+  documents = loader.load()
+  print(f"加载完成，总字符数: {len(documents[0].page_content)}\n")
 
-  text = "12，123，456。12345678901234。"
+  # text = "12，123，456。12345678901234。"
   documents = [Document(page_content=text, metadata={})]
 
   text_splitter = RecursiveCharacterTextSplitter(
