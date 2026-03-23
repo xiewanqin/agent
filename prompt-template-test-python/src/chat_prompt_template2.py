@@ -1,0 +1,63 @@
+import os
+from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate, SystemMessagePromptTemplate, HumanMessagePromptTemplate, AIMessagePromptTemplate
+
+load_dotenv()
+
+model = ChatOpenAI(
+    model=os.getenv("MODEL_NAME"),
+    api_key=os.getenv("OPENAI_API_KEY"),
+    temperature=0,
+    base_url=os.getenv("OPENAI_BASE_URL"),
+)
+
+system_template = SystemMessagePromptTemplate.from_template(
+    "你是一名资深工程团队负责人，擅长用结构化、易读的方式写技术周报。写作风格要求：{tone}。"
+)
+
+human_template = HumanMessagePromptTemplate.from_template(
+    """
+    本周信息如下：
+    - 公司名称：{company_name}
+    - 团队名称：{team_name}
+    - 直接汇报对象：{manager_name}
+    - 本周时间范围：{week_range}
+    - 本周团队核心目标：{team_goal}
+    - 本周开发数据（Git 提交 / Jira 任务等）：{dev_activities}
+
+    请据此输出一份 Markdown 周报，结构建议包含：
+    1. 本周概览（2-3 句话）
+    2. 详细拆分（按项目或模块分段）
+    3. 关键指标表格（字段示例：模块 / 亮点 / 风险 / 下周计划）
+    语气专业但有人情味。
+    """
+)
+
+composed_template = ChatPromptTemplate.from_messages([
+    system_template,
+    human_template,
+])
+
+chat_messages = composed_template.format_messages(
+    tone="专业、清晰、略带鼓励",
+    company_name="星航科技",
+    team_name="智能应用平台组",
+    manager_name="王总",
+    week_range="2026-03-22 ~ 2026-03-28",
+    team_goal="完成内部 AI 助手灰度上线，并确保核心链路稳定。",
+    dev_activities="""
+    - 小李：完成 AI 助手工单流转能力，对接客服系统，提交 25 次
+    - 小张：接入日志检索和知识库查询，提交 19 次
+    - 小王：完善监控、告警与埋点，新增 10 条核心告警规则
+    - 实习生小陈：补充使用文档和 FAQ，支持 3 个内部试点团队
+    """
+)
+
+print("使用 SystemMessagePromptTemplate / HumanMessagePromptTemplate 生成的消息:")
+print(chat_messages)
+
+response = model.invoke(chat_messages)
+
+print("\nAI 生成的周报草稿:")
+print(response.content)
