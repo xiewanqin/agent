@@ -9,6 +9,8 @@ from langchain_mcp_adapters.client import MultiServerMCPClient
 # ==================== 加载环境变量 ====================
 load_dotenv()
 
+MCP_SERVER_PATH = "/Users/xiewq/web/agent/tool-test/src/my-mcp-server.py"
+
 # ==================== 初始化模型 ====================
 model = ChatOpenAI(
     model_name=os.getenv("MODEL_NAME", "qwen-coder-turbo"),
@@ -22,29 +24,18 @@ model = ChatOpenAI(
 mcp_client = MultiServerMCPClient(
     {
         "my-mcp-server": {
-            "command": "node",
-            "args": [
-                "/Users/xiewq/web/agent/tool-test/src/my-mcp-server.mjs"
-            ],
-        }
+            "command": "python",
+            "args": [MCP_SERVER_PATH],
+            "transport": "stdio",
+        },
     }
 )
 
 
 async def load_mcp_resources():
-  """自动加载所有 MCP resources"""
-  resources_text = []
-
-  resources = await mcp_client.list_resources()
-
-  for server_name, server_resources in resources.items():
-    for r in server_resources:
-      content = await mcp_client.read_resource(server_name, r.uri)
-
-      for item in content:
-        if item.get("text"):
-          resources_text.append(item["text"])
-
+  """自动加载所有 MCP resources。get_resources() 返回 list[Blob]，Blob 已包含内容。"""
+  resources = await mcp_client.get_resources()
+  resources_text = [blob.as_string() for blob in resources if blob.as_string().strip()]
   return "\n".join(resources_text)
 
 
@@ -98,9 +89,9 @@ async def main():
 
   await run_agent("查一下用户 002 的信息")
 
-  # await run_agent("MCP Server 的使用指南是什么")
+  await run_agent("MCP Server 的使用指南是什么")
 
-  await mcp_client.close()
+  # await mcp_client.close()
 
 
 asyncio.run(main())

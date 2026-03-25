@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 from langchain.agents import create_agent
 from langchain.chat_models import init_chat_model
+from langchain_core.messages import AIMessage
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langchain_mcp_adapters.tools import load_mcp_tools
 
@@ -94,7 +95,12 @@ async def main():
       for item in content.contents:
         if hasattr(item, "text"):
           resource_content += item.text
-    log_success(f"✅ 已加载资源内容 ({len(resource_content)} 字符)")
+    if resource_content:
+      resource_content = (
+          "以下是你可参考的文档内容，请仅根据这些内容或工具返回的结果回答，不要编造。若文档或工具结果中无相关内容，请明确说明「文档/工具中未提及」。\n\n"
+          + resource_content
+      )
+    log_success(f"✅ 已加载资源内容 ({len(resource_content)} 字符)，内容为${resource_content}")
 
     # 使用 create_agent 创建 agent (LangChain 1.0 新特性)
     log_info("🤖 正在创建 Agent...")
@@ -146,27 +152,35 @@ async def main():
         log_info("⏳ Agent 正在处理...")
         result = await graph.ainvoke(inputs)
 
-      # 提取最终回复（最后一条消息）
-      # create_agent 返回的 result 包含完整的对话历史：
-      # - HumanMessage (用户输入)
-      # - AIMessage with tool_calls (AI 调用工具)
-      # - ToolMessage (工具执行结果)
-      # - AIMessage without tool_calls (AI 最终回复) <- 这是我们需要的
+      # 提取最终回复：必须是「没有 tool_calls 的 AIMessage」，避免误把 ToolMessage 当最终回复
+      # 对话顺序: HumanMessage -> AIMessage(tool_calls) -> ToolMessage -> AIMessage(最终文字)
       if "messages" in result:
-        last_message = result["messages"][-1]
+        msgs = result["messages"]
+        final_ai_msg = None
+        for m in reversed(msgs):
+          if isinstance(m, AIMessage) and not (getattr(m, "tool_calls", None)):
+            final_ai_msg = m
+            break
+        if final_ai_msg and getattr(final_ai_msg, "content", None):
+          log_success(f"\n✨ AI 最终回复:\n{final_ai_msg.content}\n")
+          return final_ai_msg.content
+        last_message = msgs[-1]
         if hasattr(last_message, "content"):
-          log_success(f"\n✨ AI 最终回复:\n{last_message.content}\n")
+          log_success(f"\n✨ AI 回复:\n{last_message.content}\n")
           return last_message.content
-        else:
-          log_success(f"\n✨ AI 回复:\n{result}\n")
-          return str(result)
+        log_success(f"\n✨ AI 回复:\n{result}\n")
+        return str(result)
       else:
         log_success(f"\n✨ AI 回复:\n{result}\n")
         return str(result)
 
     # await run_agent("北京南站附近的5个酒店，以及去的路线，路线规划生成文档保存到
     # /Users/xiewq/web/agent/tool-test-python 的一个 md 文件")
-    await run_agent("北京南站附近的酒店，最近的 3 个酒店，拿到酒店图片，打开浏览器，展示每个酒店的图片，每个 tab 一个 url 展示，并且在把那个页面标题改为酒店名")
+    # await run_agent("北京南站附近的酒店，最近的 3 个酒店，拿到酒店图片，打开浏览器，展示每个酒店的图片，每个 tab 一个
+    # url 展示，并且在把那个页面标题改为酒店名")
+    # await run_agent("查一下用户 002 的信息")
+
+    await run_agent("MCP Server 的使用指南是什么")
 
 
 if __name__ == "__main__":
