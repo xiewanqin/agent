@@ -40,7 +40,18 @@ def retrieve_relevant_ebook_content(question: str, k: int = 5) -> list[dict]:
       search_params={'metric_type': 'COSINE'},
       output_fields=['id', 'book_id', 'chapter_num', 'index', 'content']
   )
-  return search_result[0]
+
+  retrieved_content = []
+  for result in search_result[0]:
+    retrieved_content.append({
+        "id": result["id"],
+        "book_id": result["book_id"],
+        "chapter_num": result["chapter_num"],
+        "index": result["index"],
+        "content": result["content"],
+        "score": result["distance"],
+    })
+  return retrieved_content
 
 
 def answer_ebook_question(question: str, k: int = 5) -> str:
